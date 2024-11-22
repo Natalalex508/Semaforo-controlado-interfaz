@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semáforo Controlado</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        .background-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        .background-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            position: relative;
+            z-index: 1;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .semaforo-container, .controls-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .semaforo {
+            width: 120px;
+            height: 300px;
+            background-color: #222;
+            border-radius: 15px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+        }
+        .light {
+            width: 70px;
+            height: 70px;
+            background-color: #555;
+            border-radius: 50%;
+            transition: background-color 0.3s ease;
+        }
+        .light.red.active {
+            background-color: red;
+        }
+        .light.yellow.active {
+            background-color: yellow;
+        }
+        .light.green.active {
+            background-color: green;
+        }
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        .controls label {
+            font-size: 14px;
+        }
+        .controls input {
+            width: 120px;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .controls button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .controls button.stop {
+            background-color: #dc3545;
+        }
+        .controls button:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="background-container">
+        <img src="background.png.jpg" alt="Background Image">
+    </div>
+    <div class="container">
+        <!-- Semáforo -->
+        <div class="semaforo-container">
+            <div class="title">Semáforo</div>
+            <div class="semaforo">
+                <div class="light red"></div>
+                <div class="light yellow"></div>
+                <div class="light green"></div>
+            </div>
+        </div>
+
+        <!-- Controles -->
+        <div class="controls-container">
+            <div class="title">Control de Semáforo</div>
+            <div class="controls">
+                <label for="redTime">Tiempo Rojo (ms):</label>
+                <input type="number" id="redTime" placeholder="Ej: 3000" />
+
+                <label for="yellowTime">Tiempo Amarillo (ms):</label>
+                <input type="number" id="yellowTime" placeholder="Ej: 1000" />
+
+                <label for="greenTime">Tiempo Verde (ms):</label>
+                <input type="number" id="greenTime" placeholder="Ej: 3000" />
+
+                <button onclick="startSemaforo()">Iniciar Semáforo</button>
+                <button class="stop" onclick="stopSemaforo()">Detener Semáforo</button>
+                <button onclick="allLightsOn()">Encender Todos</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentLight = 0; // 0 = red, 1 = yellow, 2 = green
+        let interval;
+        let isBlinking = false;
+
+        function startSemaforo() {
+            const redTime = parseInt(document.getElementById("redTime").value) || 3000;
+            const yellowTime = parseInt(document.getElementById("yellowTime").value) || 1000;
+            const greenTime = parseInt(document.getElementById("greenTime").value) || 3000;
+
+            const durations = [redTime, yellowTime, greenTime];
+
+            stopSemaforo(); // Asegura que no haya ciclos previos
+            const lights = document.querySelectorAll('.light');
+            lights.forEach(light => light.classList.remove('active'));
+            lights[0].classList.add('active'); // Enciende rojo inicialmente
+
+            function blinkLight(callback) {
+                isBlinking = true;
+                let blinkCount = 0;
+                const blinkInterval = setInterval(() => {
+                    lights[currentLight].classList.toggle('active');
+                    blinkCount++;
+                    if (blinkCount >= 6) { // 3 ciclos de encendido y apagado
+                        clearInterval(blinkInterval);
+                        lights[currentLight].classList.remove('active');
+                        isBlinking = false;
+                        callback();
+                    }
+                }, 300);
+            }
+
+            function changeLight() {
+                if (isBlinking) return;
+                blinkLight(() => {
+                    currentLight = (currentLight + 1) % 3;
+                    lights[currentLight].classList.add('active');
+                    interval = setTimeout(changeLight, durations[currentLight]);
+                });
+            }
+
+            interval = setTimeout(() => changeLight(), durations[0]); // Espera inicial para el rojo
+        }
+
+        function stopSemaforo() {
+            clearTimeout(interval);
+            const lights = document.querySelectorAll('.light');
+            lights.forEach(light => light.classList.remove('active'));
+        }
+
+        function allLightsOn() {
+            stopSemaforo(); // Detiene el ciclo
+            const lights = document.querySelectorAll('.light');
+            lights.forEach(light => light.classList.add('active'));
+        }
+    </script>
+</body>
+</html>
